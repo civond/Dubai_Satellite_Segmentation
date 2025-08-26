@@ -11,12 +11,12 @@ def train_fn(device, loader, model, optimizer, loss_fn, scaler):
         data = data.to(device)
         labels = labels.to(device)
 
-        # forward
+        # forward pass
         with torch.cuda.amp.autocast():
             predictions = model(data)['out']  # <-- extract tensor
             loss = loss_fn(predictions, labels)
 
-        # backward
+        # backward pass
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)

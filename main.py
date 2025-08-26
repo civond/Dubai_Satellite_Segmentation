@@ -1,4 +1,3 @@
-import json
 import torch
 import torch.optim as optim
 import torch.nn as nn
@@ -19,9 +18,10 @@ IMAGE_HEIGHT = 256
 IMAGE_WIDTH = 256
 PIN_MEMORY = True
 LOAD_MODEL = False
-TRAIN = True
+TRAIN = False
 
 DATA_DIR = "data/"
+CHECKPOINT_PATH = "my_checkpoint.pth.tar"
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -36,7 +36,7 @@ def main():
     )
     model.to(DEVICE)
 
-    transforms = create_transforms(IMAGE_HEIGHT, IMAGE_WIDTH)
+    transforms = create_transforms(IMAGE_HEIGHT, IMAGE_WIDTH, TRAIN)
     loader = get_loader(DATA_DIR, 
                         BATCH_SIZE, 
                         transforms,
@@ -46,19 +46,24 @@ def main():
         
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-    scaler = torch.cuda.amp.GradScaler()
+    scaler = torch.amp.GradScaler(device="cuda")
 
-    for epoch in range(NUM_EPOCHS):
-        print(f"\nEpoch: {epoch}")
+    if TRAIN == True:
+        print("Training...")
+        for epoch in range(NUM_EPOCHS):
+            print(f"\nEpoch: {epoch}")
+            train_fn(device, loader, model, optimizer, loss_fn, scaler)
 
-        train_fn(device, loader, model, optimizer, loss_fn, scaler)
-
-        # Save model
-        checkpoint = {
-            "state_dict": model.state_dict(),
-            "optimizer": optimizer.state_dict()
-        }
-        save_checkpoint(checkpoint)
+            # Save model
+            checkpoint = {
+                "state_dict": model.state_dict(),
+                "optimizer": optimizer.state_dict()
+            }
+            save_checkpoint(checkpoint)
+            
+    elif TRAIN == False:
+        print("Interence")
+        load_checkpoint(CHECKPOINT_PATH, model)
 
 
 if __name__ == "__main__":
